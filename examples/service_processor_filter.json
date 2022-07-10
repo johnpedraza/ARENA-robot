@@ -1,0 +1,7 @@
+{
+    "instance_name": "filter",
+    "interval_ms": -1,
+	"service_type": "processor_filter",
+    "subtopic": "pose_filtered",
+    "sensor_topic": "realm/d/jpedraza/john-pi/processors/apriltag_pose"
+}
