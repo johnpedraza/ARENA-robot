@@ -98,7 +98,13 @@ class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
             payload = self.decode_payload(msg)
             if payload:
                 print(printFormattedPose(payload['msg']['data']['v_aeroref_aerobody']))
+
+        def print_optitrack(client, userdata, msg: MQTTMessage):
+            payload = self.decode_payload(msg)
+            if payload:
+                print(payload)
  
         self.device.message_callback_add(self.sensor_topic, filter_data)
         self.device.message_callback_add('realm/d/jpedraza/john-pi/processors/pose_transformed', print_t265)
+        self.device.message_callback_add('realm/d/jpedraza/john-pi/processors/pose_optitrack', print_optitrack)
 
