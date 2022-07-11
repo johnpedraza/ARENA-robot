@@ -1,0 +1,6 @@
+{
+    "service_type": "processor_optitrack",
+    "instance_name": "optitrack",
+    "subtopic": "pose_optitrack",
+    "interval_ms": -1
+}

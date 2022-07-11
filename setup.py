@@ -112,6 +112,9 @@ setup(
             # issue with pylint later
             # see https://github.com/opencv/opencv-python/issues/570#issuecomment-1151984301
             'opencv-python==4.5.5.64'
+        ],
+        'optitrack': [
+            'NatNetClient>=0.8.3'
         ]
     }
 )
