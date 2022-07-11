@@ -93,6 +93,12 @@ class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
                     
                     
             self.prev_time = currTime
+
+        def print_t265(client, userdata, msg: MQTTMessage):
+            payload = self.decode_payload(msg)
+            if payload:
+                print(printFormattedPose(payload['msg']['data']['v_aeroref_aerobody']))
  
         self.device.message_callback_add(self.sensor_topic, filter_data)
+        self.device.message_callback_add('realm/d/jpedraza/john-pi/processors/pose_transformed', print_t265)
 
