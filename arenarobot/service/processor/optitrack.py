@@ -18,6 +18,7 @@ import numpy as np
 from NatNetClient import NatNetClient
 from arenarobot.service.processor import ArenaRobotServiceProcessor
 
+JOHN_PI_RIGIDBODY_STREAMING_ID = 40
 
 # pylint: disable=too-many-instance-attributes
 class ArenaRobotServiceProcessorOptitrack(ArenaRobotServiceProcessor):
@@ -54,7 +55,7 @@ class ArenaRobotServiceProcessorOptitrack(ArenaRobotServiceProcessor):
             global last_optitrack_time
             global last_optitrack_pose
 
-            if (id == 39):
+            if (id == JOHN_PI_RIGIDBODY_STREAMING_ID):
                 pose = position
                 out = {
                     "pose": pose,
