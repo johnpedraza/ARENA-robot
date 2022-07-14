@@ -52,13 +52,9 @@ class ArenaRobotServiceProcessorOptitrack(ArenaRobotServiceProcessor):
         """
         
         def receiveRigidBodyFrame(id, position, rotation):
-            global last_optitrack_time
-            global last_optitrack_pose
-
             if (id == JOHN_PI_RIGIDBODY_STREAMING_ID):
-                pose = position
                 out = {
-                    "pose": pose,
+                    "pose": {"position": position, "rotation": rotation}
                 }
                 print(out)
                 serializable_out = loads(dumps(
