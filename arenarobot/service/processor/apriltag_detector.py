@@ -16,6 +16,7 @@ from typing import List
 import cv2
 import numpy as np
 from dt_apriltags import Detector
+from scipy.spatial.transform import Rotation as R
 
 from arenarobot.service.processor import ArenaRobotServiceProcessor
 
@@ -182,8 +183,19 @@ class ArenaRobotServiceProcessorApriltagDetector(ArenaRobotServiceProcessor):
             else:
                 print('Unknown Apriltag')
 
+        # if pose measured from tag detection, separate into position
+        # and rotation 
+        position = None
+        rotation = None
+        if pose is not None:
+            position = (pose[0][3], pose[1][3], pose[2][3])
+            r = R.from_matrix([[pose[0][0], pose[0][1], pose[0][2]],
+                               [pose[1][0], pose[1][1], pose[1][2]],
+                               [pose[2][0], pose[2][1], pose[2][2]]]).as_quat()
+            rotation = (r[0], r[1], r[2], r[3])
+
         out = {
-            "pose": pose,
+            "pose": {"position": position, "rotation": rotation}
         }
         serializable_out = loads(dumps(
             out,
