@@ -3,5 +3,9 @@
     "interval_ms": -1,
 	"service_type": "processor_filter",
     "subtopic": "pose_filtered",
-    "sensor_topic": "realm/d/jpedraza/john-pi/processors/apriltag_pose"
+    "apriltag_topic": "realm/d/jpedraza/john-pi/processors/apriltag_pose",
+    "vio_topic": "realm/d/jpedraza/john-pi/processors/pose_transformed",
+    "optitrack_topic": "realm/d/jpedraza/john-pi/processors/pose_optitrack",
+    "record": true,
+    "recording_id": 0
 }
