@@ -91,7 +91,9 @@ class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
         self.fetched_once = True
 
         def exit_handler():
-            self.df_optitrack.to_csv('recording.csv')
+            self.df_optitrack.to_csv('recording_optitrack.csv')
+            self.df_apriltags.to_csv('recording_apriltags.csv')
+            self.df_vio.to_csv('recording_vio.csv')
         atexit.register(exit_handler)
 
         '''
@@ -120,20 +122,34 @@ class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
 
         def process_apriltag(client, userdata, msg: MQTTMessage):
             payload = self.decode_payload(msg)
+            print(f'Apriltag Payload: {payload}')
             if payload:
-                print(f'Apriltag Payload: {payload}')
-                # new_df = pd.DataFrame()
-                # self.df_apriltags = pd.concat([self.df_apriltags, new_df])
+                new_df = pd.DataFrame([[payload['timestamp'],
+                                        payload['msg']['data']['pose']['position'],
+                                        payload['msg']['data']['pose']['rotation']]],
+                                       columns=['time', 'position', 'rotation'])
+                self.df_apriltags = pd.concat([self.df_apriltags, new_df])
         
         def process_vio(client, userdata, msg: MQTTMessage):
             payload = self.decode_payload(msg)
             if payload:
-                print(printFormattedPose(payload['msg']['data']['v_aeroref_aerobody']))
+                print(f'VIO Payload: {payload}')
+                pose_mtx = payload['msg']['data']['h_t265_t265body']
+                position = (pose_mtx[0][3], pose_mtx[1][3], pose_mtx[2][3])
+                r = R.from_matrix([[pose_mtx[0][0], pose_mtx[0][1], pose_mtx[0][2]],
+                                   [pose_mtx[1][0], pose_mtx[1][1], pose_mtx[1][2]],
+                                   [pose_mtx[2][0], pose_mtx[2][1], pose_mtx[2][2]]]).as_quat()
+                rotation = (r[0], r[1], r[2], r[3])
+                new_df = pd.DataFrame([[payload['timestamp'], 
+                                        position, 
+                                        rotation]], 
+                                        columns=['time', 'position', 'rotation'])
+                self.df_vio = pd.concat([self.df_vio, new_df])
 
         def process_optitrack(client, userdata, msg: MQTTMessage):
             payload = self.decode_payload(msg)
-            print(payload)
             if payload:
+                print(f'Optitrack Payload: {payload}')
                 new_df = pd.DataFrame([[payload['timestamp'], 
                                         payload['msg']['data']['pose']['position'], 
                                         payload['msg']['data']['pose']['rotation']]], 
