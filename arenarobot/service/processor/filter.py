@@ -20,6 +20,8 @@ from filterpy.kalman import predict, update, KalmanFilter
 from filterpy.common import Q_discrete_white_noise
 import numpy as np
 import time
+import pandas as pd
+import atexit # is there an ARENA-robot builtin for this?
 
 def printFormattedPose(pose):
     print(pose[0], '\n', pose[1], '\n', pose[2], '\n', pose[3])
@@ -27,9 +29,23 @@ def printFormattedPose(pose):
 # TODO: If filter service is started before apriltag detector service, this doesn't work
 class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
     DEVICE_INSTANCE_PROCESSOR_TYPE = "filter"
-    def __init__(self, sensor_topic, **kwargs):
+    def __init__(self, 
+                 apriltag_topic = None,
+                 vio_topic = None,
+                 optitrack_topic = None, 
+                 record: bool = False, # whether or not to record pose data
+                 recording_id: int = -1,
+                 **kwargs):
         
-        self.sensor_topic = sensor_topic
+        self.apriltag_topic = apriltag_topic
+        self.vio_topic = vio_topic
+        self.optitrack_topic = optitrack_topic
+
+        self.record = record
+        self.recording_id = recording_id
+        self.df_apriltags = None
+        self.df_vio = None
+        self.df_optitrack = None
 
         self.fetched_once = False
         self.prev_time = time.time()       
@@ -46,6 +62,10 @@ class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
             )
 
     def setup(self):
+        if self.record:
+            self.df_apriltags = pd.DataFrame(columns=['time', 'position', 'rotation'])
+            self.df_optitrack = pd.DataFrame(columns=['time', 'position', 'rotation'])
+
         # initialize filter
         self.filter = KalmanFilter(dim_x=6, dim_z=6)
         
@@ -69,6 +89,10 @@ class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
             print("Filter processor should have interval of -1!")
             return
         self.fetched_once = True
+
+        def exit_handler():
+            self.df_optitrack.to_csv('recording.csv')
+        atexit.register(exit_handler)
 
         '''
         Filter receives pose data from various sensors via MQTT and outputs 
@@ -94,17 +118,31 @@ class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
                     
             self.prev_time = currTime
 
-        def print_t265(client, userdata, msg: MQTTMessage):
+        def process_apriltag(client, userdata, msg: MQTTMessage):
+            payload = self.decode_payload(msg)
+            if payload:
+                print(f'Apriltag Payload: {payload}')
+                # new_df = pd.DataFrame()
+                # self.df_apriltags = pd.concat([self.df_apriltags, new_df])
+        
+        def process_vio(client, userdata, msg: MQTTMessage):
             payload = self.decode_payload(msg)
             if payload:
                 print(printFormattedPose(payload['msg']['data']['v_aeroref_aerobody']))
 
-        def print_optitrack(client, userdata, msg: MQTTMessage):
+        def process_optitrack(client, userdata, msg: MQTTMessage):
             payload = self.decode_payload(msg)
+            print(payload)
             if payload:
-                print(payload)
- 
-        self.device.message_callback_add(self.sensor_topic, filter_data)
-        self.device.message_callback_add('realm/d/jpedraza/john-pi/processors/pose_transformed', print_t265)
-        self.device.message_callback_add('realm/d/jpedraza/john-pi/processors/pose_optitrack', print_optitrack)
-
+                new_df = pd.DataFrame([[payload['timestamp'], 
+                                        payload['msg']['data']['pose']['position'], 
+                                        payload['msg']['data']['pose']['rotation']]], 
+                                        columns=['time', 'position', 'rotation'])
+                self.df_optitrack = pd.concat([self.df_optitrack, new_df])
+        
+        if self.apriltag_topic:
+            self.device.message_callback_add(self.apriltag_topic, process_apriltag)
+        if self.vio_topic:
+            self.device.message_callback_add(self.vio_topic, process_vio)
+        if self.optitrack_topic:
+            self.device.message_callback_add(self.optitrack_topic, process_optitrack)
