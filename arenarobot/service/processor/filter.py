@@ -65,6 +65,7 @@ class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
         if self.record:
             self.df_apriltags = pd.DataFrame(columns=['time', 'position', 'rotation'])
             self.df_optitrack = pd.DataFrame(columns=['time', 'position', 'rotation'])
+            self.df_vio = pd.DataFrame(columns=['time', 'position', 'rotation']) 
 
         # initialize filter
         self.filter = KalmanFilter(dim_x=6, dim_z=6)
