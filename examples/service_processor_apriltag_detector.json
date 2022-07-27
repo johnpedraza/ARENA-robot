@@ -3,7 +3,7 @@
     "subtopic": "apriltag_pose",
     "interval_ms": 30,
     "service_type": "processor_apriltag_detector",
-    "video_file": "/dev/v4l/by-id/usb-046d_Logitech_BRIO_38317249-video-index0",
+    "video_file": "/dev/v4l/by-id/usb-046d_Logitech_BRIO_21907239-video-index0",
     "camera_resolution": [1920, 1080],
     "camera_params": [1671.54341, 1671.85974, 965.961258, 536.318076],
     "dist_params": [0.24306313, -0.88091541, -0.0028385, 0.00149656, 1.42297868],
