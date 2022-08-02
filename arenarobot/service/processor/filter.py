@@ -13,7 +13,7 @@ LICENSE file in the root directory of this source tree.
 from json import JSONEncoder, dumps, loads
 from datetime import datetime
 from scipy.spatial.transform import Rotation as R
-from arena import Device, Scene, Box, Position
+from arena import Device
 from paho.mqtt.client import MQTTMessage
 from arenarobot.service.processor import ArenaRobotServiceProcessor
 from filterpy.kalman import predict, update, KalmanFilter
@@ -48,16 +48,7 @@ class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
         self.df_optitrack = None
 
         self.fetched_once = False
-        self.prev_time = time.time()      
-
-        self.position = None
-        self.rotation = None
-        self.prev_global_position = None
-        self.prev_global_rotation = None
-        self.prev_global_t265_position = None
-        self.prev_global_t265_rotation = None
-
-        self.global_known = False 
+        self.prev_time = time.time()       
  
         # filtering
         self.filter = None
@@ -76,11 +67,20 @@ class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
             self.df_optitrack = pd.DataFrame(columns=['time', 'position', 'rotation'])
             self.df_vio = pd.DataFrame(columns=['time', 'position', 'rotation']) 
 
-        self.position = self.prev_global_position = (0, 0, 0)
-        self.rotation = self.prev_global_rotation = (0, 0, 0, 1)
-
-        self.prev_global_t265_position = (0, 0, 0)
-        self.prev_global_t265_rotation = (0, 0, 0, 1)
+        # initialize filter
+        self.filter = KalmanFilter(dim_x=6, dim_z=6)
+        
+        # state estimate vector
+        self.filter.x = np.array([0, 0, 0, 0, 0, 0], dtype=float)
+        
+        # measurement function
+        self.filter.H = np.eye(6, dtype=float)
+        
+        # measurement covariance
+        self.filter.R = 0.175
+        
+        # filter state covariance
+        self.filter.P = np.diag([500.0, 100.0, 500.0, 100.0, 500.0, 100.0])
 
         super().setup()
 
@@ -90,6 +90,12 @@ class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
             print("Filter processor should have interval of -1!")
             return
         self.fetched_once = True
+
+        def exit_handler():
+            self.df_optitrack.to_csv('recording_optitrack.csv')
+            self.df_apriltags.to_csv('recording_apriltags.csv')
+            self.df_vio.to_csv('recording_vio.csv')
+        atexit.register(exit_handler)
 
         '''
         Filter receives pose data from various sensors via MQTT and outputs 
@@ -112,66 +118,48 @@ class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
                 else:
                     printFormattedPose(payload["msg"]["data"]["pose"])
                     
+                    
             self.prev_time = currTime
 
         def process_apriltag(client, userdata, msg: MQTTMessage):
             payload = self.decode_payload(msg)
+            print(f'Apriltag Payload: {payload}')
             if payload:
-                pos = payload['msg']['data']['pose']['position']
-                rot = payload['msg']['data']['pose']['rotation']
-                if pos and rot:
-                    self.position = self.prev_global_position = (pos[0], pos[1], pos[2])
-                    self.rotation = self.prev_global_rotation = (rot[0], rot[1], rot[2], rot[3])
-                    self.global_known = True
-                    print(f'Position = {self.position}')
-                    print(f'Rotation = {self.rotation}')
-                    out = {
-                    "pose": {"position": self.position, "rotation": self.rotation}
-                    }
-                    serializable_out = loads(dumps(
-                        out,
-                        cls=TransformedApriltagDetectorJSONEncoder
-                    ))
-
-                    # this publishes to subtopic (self.topic)
-                    self.publish({"data": serializable_out})
+                new_df = pd.DataFrame([[payload['timestamp'],
+                                        payload['msg']['data']['pose']['position'],
+                                        payload['msg']['data']['pose']['rotation']]],
+                                       columns=['time', 'position', 'rotation'])
+                self.df_apriltags = pd.concat([self.df_apriltags, new_df])
         
         def process_vio(client, userdata, msg: MQTTMessage):
             payload = self.decode_payload(msg)
             if payload:
-                pose = payload['msg']['data']['h_t265_t265body']
-                if self.global_known:
-                    self.prev_global_t265_position = (pose[0][3], pose[1][3], pose[2][3])
-                    r = R.from_matrix([[pose[0][0], pose[0][1], pose[0][2]],
-                                       [pose[1][0], pose[1][1], pose[1][2]],
-                                       [pose[2][0], pose[2][1], pose[2][2]]]).as_quat()
-                    self.prev_global_t265_rotation = (r[0], r[1], r[2], r[3])
-                    self.global_known = False
-                self.position = (self.prev_global_position[0] + (pose[0][3] - self.prev_global_t265_position[0]),
-                                 self.prev_global_position[1] + (pose[1][3] - self.prev_global_t265_position[1]),
-                                 self.prev_global_position[2] + (pose[2][3] - self.prev_global_t265_position[2]))
-                out = {
-                "pose": {"position": self.position, "rotation": self.rotation}
-                }
-                serializable_out = loads(dumps(
-                    out,
-                    cls=TransformedApriltagDetectorJSONEncoder
-                ))
-                self.publish({"data": serializable_out})
-                print(self.position)
+                print(f'VIO Payload: {payload}')
+                pose_mtx = payload['msg']['data']['h_t265_t265body']
+                position = (pose_mtx[0][3], pose_mtx[1][3], pose_mtx[2][3])
+                r = R.from_matrix([[pose_mtx[0][0], pose_mtx[0][1], pose_mtx[0][2]],
+                                   [pose_mtx[1][0], pose_mtx[1][1], pose_mtx[1][2]],
+                                   [pose_mtx[2][0], pose_mtx[2][1], pose_mtx[2][2]]]).as_quat()
+                rotation = (r[0], r[1], r[2], r[3])
+                new_df = pd.DataFrame([[payload['timestamp'], 
+                                        position, 
+                                        rotation]], 
+                                        columns=['time', 'position', 'rotation'])
+                self.df_vio = pd.concat([self.df_vio, new_df])
+
+        def process_optitrack(client, userdata, msg: MQTTMessage):
+            payload = self.decode_payload(msg)
+            if payload:
+                print(f'Optitrack Payload: {payload}')
+                new_df = pd.DataFrame([[payload['timestamp'], 
+                                        payload['msg']['data']['pose']['position'], 
+                                        payload['msg']['data']['pose']['rotation']]], 
+                                        columns=['time', 'position', 'rotation'])
+                self.df_optitrack = pd.concat([self.df_optitrack, new_df])
         
         if self.apriltag_topic:
             self.device.message_callback_add(self.apriltag_topic, process_apriltag)
         if self.vio_topic:
             self.device.message_callback_add(self.vio_topic, process_vio)
-
-
-class TransformedApriltagDetectorJSONEncoder(JSONEncoder):
-    """JSON Encoder helper for Apriltag Detector transformed attributes."""
-
-    def default(self, o):
-        """JSON Encoder helper for Apriltag Detector pose attributes."""
-        if isinstance(o, (np.ndarray)):
-            return list(o)
-
-        return JSONEncoder.default(self, o)
+        if self.optitrack_topic:
+            self.device.message_callback_add(self.optitrack_topic, process_optitrack)

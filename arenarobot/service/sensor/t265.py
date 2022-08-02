@@ -55,61 +55,47 @@ class ArenaRobotServiceSensorT265(ArenaRobotServiceSensor):
         )
 
     def setup(self):
-        try:
-            """Set up T265 sensor."""
-            rs.log_to_console(rs.log_severity.warn)
-            self.rs_pipe = rs.pipeline()
-            self.rs_cfg = rs.config()
-            self.rs_cfg.enable_stream(rs.stream.pose)
+        """Set up T265 sensor."""
+        rs.log_to_console(rs.log_severity.warn)
+        self.rs_pipe = rs.pipeline()
+        self.rs_cfg = rs.config()
+        self.rs_cfg.enable_stream(rs.stream.pose)
 
-            self.rs_device = self.rs_cfg.resolve(self.rs_pipe).get_device()
-            self.pose_sensor = self.rs_device.first_pose_sensor()
-            self.pose_sensor.set_option(rs.option.enable_pose_jumping,
-                                        int(self.enable_pose_jumping))
-            self.pose_sensor.set_option(rs.option.enable_relocalization,
-                                        int(self.enable_relocalization))
-            self.pose_sensor.set_option(rs.option.enable_map_preservation,
-                                        int(self.enable_map_preservation))
-            self.pose_sensor.set_option(rs.option.enable_mapping,
-                                        int(self.enable_mapping))
-            self.pose_sensor.set_option(rs.option.enable_dynamic_calibration,
-                                        int(self.enable_dynamic_calibration))
+        self.rs_device = self.rs_cfg.resolve(self.rs_pipe).get_device()
+        self.pose_sensor = self.rs_device.first_pose_sensor()
+        self.pose_sensor.set_option(rs.option.enable_pose_jumping,
+                                    int(self.enable_pose_jumping))
+        self.pose_sensor.set_option(rs.option.enable_relocalization,
+                                    int(self.enable_relocalization))
+        self.pose_sensor.set_option(rs.option.enable_map_preservation,
+                                    int(self.enable_map_preservation))
+        self.pose_sensor.set_option(rs.option.enable_mapping,
+                                    int(self.enable_mapping))
+        self.pose_sensor.set_option(rs.option.enable_dynamic_calibration,
+                                    int(self.enable_dynamic_calibration))
 
-            self.rs_ctx = rs.context()
+        self.rs_ctx = rs.context()
 
-            def rs_notification_callback(notif):
-                print("INFO: T265 event: " + notif)
-                self.publish({"data": {"notif": notif}})
+        def rs_notification_callback(notif):
+            print("INFO: T265 event: " + notif)
+            self.publish({"data": {"notif": notif}})
 
-            self.pose_sensor.set_notifications_callback(rs_notification_callback)
-            self.rs_pipe.start(self.rs_cfg)
+        self.pose_sensor.set_notifications_callback(rs_notification_callback)
+        self.rs_pipe.start(self.rs_cfg)
 
-            time.sleep(1)
-            super().setup()
-        except Exception as e:
-            print(f'EXCEPTION: {e}')
+        time.sleep(1)
+        super().setup()
 
     def fetch(self):
         """Fetch T265 data."""
-        try:
-            status, frames = self.rs_pipe.try_wait_for_frames(self.timeout_ms)
-        except Exception as e:
-            print(f'EXCEPTION: {e}')
-            self.setup()
-            return
+        status, frames = self.rs_pipe.try_wait_for_frames(self.timeout_ms)
         if not status:
             print("REALSENSE DATA BAD!")
             self.publish({"data": {"error": "rs_data_bad"}})
-            self.setup()
             return
 
         # Fetch pose frame
-        try:
-            pose = frames.get_pose_frame()
-        except Exception as e:
-            print(f'EXCEPTION: {e}')
-            self.setup()
-
+        pose = frames.get_pose_frame()
         if not pose:
             print("No pose!")
             self.publish({"data": {"error": "rs_no_pose"}})

@@ -12,7 +12,6 @@ LICENSE file in the root directory of this source tree.
 
 from json import JSONEncoder, dumps, loads
 
-import time
 import numpy as np
 from paho.mqtt.client import MQTTMessage
 from transformations import euler_matrix, quaternion_matrix
