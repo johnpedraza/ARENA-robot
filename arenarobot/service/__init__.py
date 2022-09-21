@@ -16,6 +16,7 @@ from .processor.apriltag_detector import \
 from .processor.t265 import ArenaRobotServiceProcessorT265
 from .processor.filter import ArenaRobotServiceProcessorFilter
 from .processor.optitrack import ArenaRobotServiceProcessorOptitrack
+from .processor.streamer import ArenaRobotServiceProcessorStreamer
 from .sensor import ArenaRobotServiceSensor
 from .sensor.beluga_serial import ArenaRobotServiceSensorBelugaSerial
 from .sensor.licosa_serial import ArenaRobotServiceSensorLiCosaSerial
@@ -34,5 +35,6 @@ SERVICE_TYPE_MAP = {
     "processor_t265": ArenaRobotServiceProcessorT265,
     "processor_apriltag_detector": ArenaRobotServiceProcessorApriltagDetector,
     "processor_filter": ArenaRobotServiceProcessorFilter,
-    "processor_optitrack": ArenaRobotServiceProcessorOptitrack
+    "processor_optitrack": ArenaRobotServiceProcessorOptitrack,
+    "processor_streamer": ArenaRobotServiceProcessorStreamer
 }

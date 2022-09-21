@@ -2,5 +2,5 @@
     "service_type": "sensor_t265",
     "instance_name": "t265_1",
     "subtopic": "pose",
-    "interval_ms": 0
+    "interval_ms": 100
 }

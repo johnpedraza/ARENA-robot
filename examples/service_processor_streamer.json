@@ -1,0 +1,7 @@
+{
+    "instance_name": "streamer",
+    "interval_ms": -1,
+	"service_type": "processor_streamer",
+    "subtopic": "pose_streamed",
+    "filter_topic": "realm/d/jpedraza/john-pi/processors/pose_filtered"
+}

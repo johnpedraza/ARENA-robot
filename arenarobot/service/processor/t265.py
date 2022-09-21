@@ -35,7 +35,7 @@ class ArenaRobotServiceProcessorT265(ArenaRobotServiceProcessor):
                  jump_threshold_translation: float = 0.1,
                  jump_threshold_velocity: float = 20.0,
                  **kwargs):
-        """Initialize the Y265 processor class."""
+        """Initialize the T265 processor class."""
         self.sensor_t265_topic = sensor_t265_topic
         self.sensor_t265_instance_name = sensor_t265_instance_name
         self.camera_orientation = camera_orientation

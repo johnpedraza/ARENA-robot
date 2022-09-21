@@ -1,12 +1,12 @@
 {
     "instance_name": "apriltag_detector",
     "subtopic": "apriltag_pose",
-    "interval_ms": 30,
+    "interval_ms": 1000,
     "service_type": "processor_apriltag_detector",
-    "video_file": "/dev/v4l/by-id/usb-046d_Logitech_BRIO_38317249-video-index0",
-    "camera_resolution": [1920, 1080],
-    "camera_params": [1671.54341, 1671.85974, 965.961258, 536.318076],
-    "dist_params": [0.24306313, -0.88091541, -0.0028385, 0.00149656, 1.42297868],
+    "video_file": "/dev/v4l/by-id/usb-046d_Logitech_BRIO_21907239-video-index0",
+    "camera_resolution": [1280, 800],
+    "camera_params": [900.18828207, 901.22376235, 634.56561435, 402.90143264],
+    "dist_params": [0.04507951, -0.09886636, 0.00336809, 0.00042576, 0.07127838],
     "apriltag_family": "tag36h11",
     "tag_size": 0.15,
     "num_detector_threads": 4,
@@ -16,6 +16,10 @@
     "decode_sharpening": 0.25,
     "apriltag_locations": 
         {
+         "1":  [[ 1,  0,  0,  0.0000], 
+                [ 0,  0,  1,  0.0000], 
+                [ 0, -1,  0,  0.0000], 
+                [ 0,  0,  0,  1.0000]],
          "0":  [[ 1,  0,  0,  0.0000], 
                 [ 0,  0,  1,  0.0000], 
                 [ 0, -1,  0,  0.0000], 

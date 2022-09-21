@@ -48,7 +48,13 @@ class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
         self.df_optitrack = None
 
         self.fetched_once = False
-        self.prev_time = time.time()       
+        self.prev_time = time.time()      
+
+        self.position = (0, 0, 0)
+        self.rotation = (0, 0, 0, 0) 
+
+        self.last_t265_position = (0, 0, 0)
+        self.last_t265_rotation = (0, 0, 0, 0)
  
         # filtering
         self.filter = None
@@ -91,11 +97,11 @@ class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
             return
         self.fetched_once = True
 
-        def exit_handler():
-            self.df_optitrack.to_csv('recording_optitrack.csv')
-            self.df_apriltags.to_csv('recording_apriltags.csv')
-            self.df_vio.to_csv('recording_vio.csv')
-        atexit.register(exit_handler)
+        # def exit_handler():
+        #     self.df_optitrack.to_csv('recording_optitrack.csv')
+        #     self.df_apriltags.to_csv('recording_apriltags.csv')
+        #     self.df_vio.to_csv('recording_vio.csv')
+        # atexit.register(exit_handler)
 
         '''
         Filter receives pose data from various sensors via MQTT and outputs 
@@ -123,13 +129,31 @@ class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
 
         def process_apriltag(client, userdata, msg: MQTTMessage):
             payload = self.decode_payload(msg)
-            print(f'Apriltag Payload: {payload}')
             if payload:
-                new_df = pd.DataFrame([[payload['timestamp'],
-                                        payload['msg']['data']['pose']['position'],
-                                        payload['msg']['data']['pose']['rotation']]],
-                                       columns=['time', 'position', 'rotation'])
-                self.df_apriltags = pd.concat([self.df_apriltags, new_df])
+                # print(f'Apriltag Payload: {payload}')
+                
+                position = payload['msg']['data']['pose']['position']
+                rotation = payload['msg']['data']['pose']['rotation']
+                if position and rotation:
+                    self.position = tuple(position)
+                    self.rotation = tuple(rotation)
+
+                out = {
+                    "pose": {"position": position, "rotation": rotation}
+                }
+                serializable_out = loads(dumps(
+                    out,
+                    cls=TransformedFilterJSONEncoder
+                ))
+
+                # this publishes to subtopic (self.topic)
+                self.publish({"data": serializable_out})
+
+                # new_df = pd.DataFrame([[payload['timestamp'],
+                #                         payload['msg']['data']['pose']['position'],
+                #                         payload['msg']['data']['pose']['rotation']]],
+                #                        columns=['time', 'position', 'rotation'])
+                # self.df_apriltags = pd.concat([self.df_apriltags, new_df])
         
         def process_vio(client, userdata, msg: MQTTMessage):
             payload = self.decode_payload(msg)
@@ -141,11 +165,33 @@ class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
                                    [pose_mtx[1][0], pose_mtx[1][1], pose_mtx[1][2]],
                                    [pose_mtx[2][0], pose_mtx[2][1], pose_mtx[2][2]]]).as_quat()
                 rotation = (r[0], r[1], r[2], r[3])
-                new_df = pd.DataFrame([[payload['timestamp'], 
-                                        position, 
-                                        rotation]], 
-                                        columns=['time', 'position', 'rotation'])
-                self.df_vio = pd.concat([self.df_vio, new_df])
+
+                if position and rotation:
+                    self.position = list(self.position)
+                    self.position[0] -= position[0] - self.last_t265_position[0]
+                    self.position[1] += position[1] - self.last_t265_position[1]
+                    self.position[2] -= position[2] - self.last_t265_position[2]
+                    self.position = tuple(self.position)
+
+                    self.last_t265_position = tuple(position)
+                    self.last_t265_rotation = tuple(rotation)
+
+                out = {
+                    "pose": {"position": self.position, "rotation": self.rotation}
+                }
+                serializable_out = loads(dumps(
+                    out,
+                    cls=TransformedFilterJSONEncoder
+                ))
+
+                # this publishes to subtopic (self.topic)
+                self.publish({"data": serializable_out})
+
+                # new_df = pd.DataFrame([[payload['timestamp'], 
+                #                         position, 
+                #                         rotation]], 
+                #                         columns=['time', 'position', 'rotation'])
+                # self.df_vio = pd.concat([self.df_vio, new_df])
 
         def process_optitrack(client, userdata, msg: MQTTMessage):
             payload = self.decode_payload(msg)
@@ -163,3 +209,14 @@ class ArenaRobotServiceProcessorFilter(ArenaRobotServiceProcessor):
             self.device.message_callback_add(self.vio_topic, process_vio)
         if self.optitrack_topic:
             self.device.message_callback_add(self.optitrack_topic, process_optitrack)
+
+class TransformedFilterJSONEncoder(JSONEncoder):
+    """JSON Encoder helper for Apriltag Detector transformed attributes."""
+
+    def default(self, o):
+        """JSON Encoder helper for Apriltag Detector pose attributes."""
+        if isinstance(o, (np.ndarray)):
+            return list(o)
+
+        return JSONEncoder.default(self, o)
+
