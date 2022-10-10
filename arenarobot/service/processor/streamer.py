@@ -269,30 +269,28 @@ class ArenaRobotServiceProcessorStreamer(ArenaRobotServiceProcessor):
         
         def plug_panel_trigger(scene, evt, msg):
             if evt.type == "mousedown":
-                plug_hud_switch = not plug_hud_switch
-                print("plug hud: ", plug_hud_switch)
-                self.plug_stat_panel.data.visible = plug_hud_switch
+                self.plug_hud_switch = not self.plug_hud_switch
+                print("plug hud: ", self.plug_hud_switch)
+                self.plug_stat_panel.data.visible = self.plug_hud_switch
                 scene.update_object(self.plug_stat_panel)
 
 
         def plug_on_handler(scene, evt, msg):
-            global last_activitated
             if evt.type  == "mousedown":
-                if self.plug_status == True or time.time() - last_activitated < 5:
+                if self.plug_status == True or time.time() - self.last_activitated < 5:
                     print('blocked plug on')
                     return
                 smartplug_actuator('active')
-                last_activitated = time.time()
+                self.last_activitated = time.time()
 
 
         def plug_off_handler(scene, evt, msg):
-            global last_activitated
             if evt.type  == "mousedown":
-                if self.plug_status == False or time.time() - last_activitated < 5:
+                if self.plug_status == False or time.time() - self.last_activitated < 5:
                     print('blocked plug off')
                     return
                 smartplug_actuator('inactive')
-                last_activitated = time.time()
+                self.last_activitated = time.time()
 
 
         def stat_panel_trigger(scene, evt, msg):
