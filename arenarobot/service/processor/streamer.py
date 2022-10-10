@@ -93,7 +93,7 @@ class ArenaRobotServiceProcessorStreamer(ArenaRobotServiceProcessor):
             "data":
                 {"object_type":"text",
                 "position":{"x":0.135,"y":0.67,"z":0},"rotation":{"x":0,"y":0,"z":0},
-                "font":"roboto","side":"front","text":hvac_stats,"width":1.3,"color":"#ffffff",
+                "font":"roboto","side":"front","text":self.hvac_stats,"width":1.3,"color":"#ffffff",
                 "parent":"stat_panel",
                 "baseline":"top","align":"left","xOffset":0.03,"zOffset":0.03}
             })
@@ -155,7 +155,7 @@ class ArenaRobotServiceProcessorStreamer(ArenaRobotServiceProcessor):
             position=(0.85, -0.05, 0.1),
             rotation=(0, 0, 0),
             color="#25ef61",
-            parent=stat_panel,
+            parent=self.stat_panel,
             evt_handler=temp_revert_handler
         )
 
