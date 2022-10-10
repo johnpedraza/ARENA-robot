@@ -222,7 +222,7 @@ class ArenaRobotServiceProcessorStreamer(ArenaRobotServiceProcessor):
             "data":
                 {"object_type":"text",
                 "position":{"x":0.200,"y":0.18,"z":0},"rotation":{"x":0,"y":0,"z":0},
-                "font":"roboto","side":"front","text":plug_stats,"width":1.3, "color":"#ffffff",
+                "font":"roboto","side":"front","text":self.plug_stats,"width":1.3, "color":"#ffffff",
                 "parent":"plug_stat_panel",
                 "baseline":"top","align":"left","xOffset":0.03,"zOffset":0.03}
             })
