@@ -17,6 +17,9 @@ from arenarobot.service.processor import ArenaRobotServiceProcessor
 from arena import Scene, Box, Scale, Object, Text, GLTF, TextInput
 import numpy as np
 import time
+import board
+import adafruit_scd4x
+import smbus
 
 # pylint: disable=too-many-instance-attributes
 class ArenaRobotServiceProcessorStreamer(ArenaRobotServiceProcessor):
@@ -149,6 +152,14 @@ class ArenaRobotServiceProcessorStreamer(ArenaRobotServiceProcessor):
                 
         # Airspeed
         self.Bus = smbus.SMBus(1)
+        
+        # Environmental Sensors
+        self.i2c = board.I2C()
+        self.scd4x = adafruit_scd4x.SCD4X(self.i2c)
+        print("Serial number:", [hex(i) for i in self.scd4x.serial_number])
+
+        self.scd4x.start_periodic_measurement()
+        print("Waiting for first measurement....")
 
         super().setup()
 
@@ -177,6 +188,8 @@ class ArenaRobotServiceProcessorStreamer(ArenaRobotServiceProcessor):
 
             self.scene.update_object(self.box)
             
+            self.hvac_stats = ''
+            
             # Airspeed 
             try:
                 data = self.Bus.read_i2c_block_data(0x28, 0x01, 5)
@@ -186,11 +199,18 @@ class ArenaRobotServiceProcessorStreamer(ArenaRobotServiceProcessor):
 
                 result = (data_high << 8) | data_low
                 
-                self.hvac_stats = result
+                self.hvac_stats += result
                 
                 print(result)
             except:
                 print('I/O Error')
+            
+            # Environmental Sensors
+            if self.scd4x.data_ready:
+                print("CO2: %d ppm" % self.scd4x.CO2)
+                print("Temperature: %0.1f *C" % self.scd4x.temperature)
+                print("Humidity: %0.1f %%" % self.scd4x.relative_humidity)
+                print()
 
         if self.filter_topic:
             self.device.message_callback_add(self.filter_topic, stream_data)
