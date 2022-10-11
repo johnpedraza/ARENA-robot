@@ -43,8 +43,8 @@ class ArenaRobotServiceProcessorStreamer(ArenaRobotServiceProcessor):
         
         # initialize some variables
         self.hvac_hud_switch = False
-        self.hvac_stats = get_hvac_stats()
-        self.plug_status, self.plug_stats = get_smartplug_stats()
+        self.hvac_stats = None
+        # self.plug_status, self.plug_stats = get_smartplug_stats()
         self.plug_hud_switch = False
 
         self.vav_stat_button = None
@@ -99,111 +99,6 @@ class ArenaRobotServiceProcessorStreamer(ArenaRobotServiceProcessor):
             })
 
 
-        # airflow_max = Box(
-        #     object_id="airflow_max",
-        #     persist=True,
-        #     click_listener=True,
-        #     depth=0.01,
-        #     height=0.2,
-        #     width=0.4,
-        #     position=(-0.75, 0.3, 0.1),
-        #     rotation=(0, 0, 0),
-        #     color="#2825ef",
-        #     parent=stat_panel,
-        #     evt_handler=airflow_max_handler
-        # )
-
-        # airflow_min = Box(
-        #     object_id="airflow_min",
-        #     persist=True,
-        #     clickable=True,
-        #     depth=0.01,
-        #     height=0.2,
-        #     width=0.4,
-        #     position=(-0.75, -0.2, 0.1),
-        #     rotation=(0, 0, 0),
-        #     color="#25ef61",
-        #     parent=stat_panel,
-        #     evt_handler=airflow_min_handler
-        # )
-
-        self.airflow_input = GLTF(
-            object_id="airflow_input",
-            persist=True,
-            url='https://arenaxr.org/store/users/reapor_yurnero/Input_button.glb',
-            scale=Scale(0.2, 0.2, 0.2),
-            position=(0.65, 0.18, 0.1),
-            rotation=(0, 0, 0),
-            color="#000000",
-            parent=self.stat_panel,
-            clickable=True,
-            textinput=TextInput(
-                on="mouseup",
-                title="Set the airflow setpoint",
-                label="Input desesired airflow below",
-                placeholder=f"{MIN_AIRFLOW}-{MAX_AIRFLOW} (CFM)"
-            ),
-            evt_handler=airflow_input_handler,
-        )
-
-        self.temp_revert = GLTF(
-            object_id="temp_revert",
-            persist=True,
-            clickable=True,
-            url='https://arenaxr.org/store/users/reapor_yurnero/Reset_button.glb',
-            scale=Scale(0.2, 0.2, 0.2),
-            position=(0.85, -0.05, 0.1),
-            rotation=(0, 0, 0),
-            color="#25ef61",
-            parent=self.stat_panel,
-            evt_handler=temp_revert_handler
-        )
-
-        self.temp_input = GLTF(
-            object_id="temp_input",
-            persist=True,
-            url='https://arenaxr.org/store/users/reapor_yurnero/Input_button.glb',
-            scale=Scale(0.2, 0.2, 0.2),
-            position=(0.65, -0.05, 0.1),
-            rotation=(0, 0, 0),
-            color="#000000",
-            parent=self.stat_panel,
-            clickable=True,
-            textinput=TextInput(
-                on="mouseup",
-                title="Set the temperature setpoint",
-                label="Input desesired temperature below",
-                placeholder=f"{MIN_TEMP}-{MAX_TEMP} (F)"
-            ),
-            evt_handler=temp_input_handler,
-        )
-
-        self.airflow_revert = GLTF(
-            object_id="airflow_revert",
-            persist=True,
-            clickable=True,
-            url='https://arenaxr.org/store/users/reapor_yurnero/Reset_button.glb',
-            scale=Scale(0.2, 0.2, 0.2),
-            position=(0.85, 0.18, 0.1),
-            rotation=(0, 0, 0),
-            color="#25ef61",
-            parent=self.stat_panel,
-            evt_handler=airflow_revert_handler
-        )
-
-        self.water_cooler_button = Box(
-            object_id="water_cooler_button",
-            persist=True,
-            depth=0.1,
-            height=0.05,
-            width=0.1,
-            position = (2.996, 0.779, -0.459),
-            rotation =(0,0,0),
-            color = "#0ca71e",
-            clickable=True,
-            evt_handler=plug_panel_trigger
-        )
-
         self.plug_stat_panel = Object(**{
                 "object_id": "plug_stat_panel",
                 "persist": True,
@@ -227,31 +122,6 @@ class ArenaRobotServiceProcessorStreamer(ArenaRobotServiceProcessor):
                 "baseline":"top","align":"left","xOffset":0.03,"zOffset":0.03}
             })
 
-        self.plug_on_button = GLTF(
-            object_id="plug_on_button",
-            persist=True,
-            clickable=True,
-            url='https://arenaxr.org/store/users/reapor_yurnero/On_button.glb',
-            scale=Scale(0.2, 0.2, 0.2),
-            position=(0.60, 0.08, 0.1),
-            rotation=(0, 0, 0),
-            color="#25ef61",
-            parent=self.plug_stat_panel,
-            evt_handler=plug_on_handler
-        )
-
-        self.plug_off_button = GLTF(
-            object_id="plug_off_button",
-            persist=True,
-            clickable=True,
-            url='https://arenaxr.org/store/users/reapor_yurnero/Off_button.glb',
-            scale=Scale(0.2, 0.2, 0.2),
-            position=(0.60, -0.08, 0.1),
-            rotation=(0, 0, 0),
-            color="#ff0000",
-            parent=self.plug_stat_panel,
-            evt_handler=plug_off_handler
-        )
 
         self.scene.add_object(self.vav_stat_button)
         self.scene.add_object(self.stat_panel)
@@ -266,31 +136,6 @@ class ArenaRobotServiceProcessorStreamer(ArenaRobotServiceProcessor):
         self.scene.add_object(self.plug_stat_text)
         self.scene.add_object(self.plug_on_button)
         self.scene.add_object(self.plug_off_button)
-        
-        def plug_panel_trigger(scene, evt, msg):
-            if evt.type == "mousedown":
-                self.plug_hud_switch = not self.plug_hud_switch
-                print("plug hud: ", self.plug_hud_switch)
-                self.plug_stat_panel.data.visible = self.plug_hud_switch
-                scene.update_object(self.plug_stat_panel)
-
-
-        def plug_on_handler(scene, evt, msg):
-            if evt.type  == "mousedown":
-                if self.plug_status == True or time.time() - self.last_activitated < 5:
-                    print('blocked plug on')
-                    return
-                smartplug_actuator('active')
-                self.last_activitated = time.time()
-
-
-        def plug_off_handler(scene, evt, msg):
-            if evt.type  == "mousedown":
-                if self.plug_status == False or time.time() - self.last_activitated < 5:
-                    print('blocked plug off')
-                    return
-                smartplug_actuator('inactive')
-                self.last_activitated = time.time()
 
 
         def stat_panel_trigger(scene, evt, msg):
@@ -301,32 +146,9 @@ class ArenaRobotServiceProcessorStreamer(ArenaRobotServiceProcessor):
                 self.stat_panel.data.visible=self.hvac_hud_switch
                 scene.update_object(self.stat_panel)
                 # scene.update_object(airflow_max, **{"click-listener": False})
-
-        # not used
-        def airflow_max_handler(scene, evt, msg):
-            if evt.type == "mousedown":
-                airflow_actuator('max')
-
-        # not used
-        def airflow_min_handler(scene, evt, msg):
-            if evt.type == "mousedown":
-                airflow_actuator('min')
-
-        def airflow_revert_handler(scene, evt, msg):
-            if evt.type == "mousedown":
-                airflow_actuator('revert')
-
-        def airflow_input_handler(scene, evt, msg):
-            if evt.type == "textinput":
-                airflow_actuator(evt.data.text)
-
-        def temp_revert_handler(scene, evt, msg):
-            if evt.type == "mousedown":
-                temperature_actuator('revert')
-
-        def temp_input_handler(scene, evt, msg):
-            if evt.type == "textinput":
-                temperature_actuator(evt.data.text)
+                
+        # Airspeed
+        self.Bus = smbus.SMBus(1)
 
         super().setup()
 
@@ -354,6 +176,21 @@ class ArenaRobotServiceProcessorStreamer(ArenaRobotServiceProcessor):
 
 
             self.scene.update_object(self.box)
+            
+            # Airspeed 
+            try:
+                data = self.Bus.read_i2c_block_data(0x28, 0x01, 5)
+                data_high, data_low = data[1], data[2]
+
+                data_high &= 7
+
+                result = (data_high << 8) | data_low
+                
+                self.hvac_stats = result
+                
+                print(result)
+            except:
+                print('I/O Error')
 
         if self.filter_topic:
             self.device.message_callback_add(self.filter_topic, stream_data)
